@@ -1,0 +1,164 @@
+vs code
+	extension de python
+	extension de jupyter
+	instalar ipykernel
+
+pycharm
+dlib
+python -m pip install dlib-19.22.99-cp39-cp39-win_amd64.whl
+
+pip install ttkthemes #para temas de interfaz
+
+
+
+
+CREATE TABLE IF NOT EXISTS usuario (
+    id_usuario SERIAL PRIMARY KEY,
+    nombre_encargado VARCHAR(50),
+    nombre_usuario VARCHAR(50),
+    contraseña VARCHAR(50)
+);
+
+CREATE TABLE IF NOT EXISTS persona(
+    id_persona SERIAL PRIMARY KEY,
+    grado VARCHAR(20),
+    ap_paterno VARCHAR(20),
+    ap_materno VARCHAR(20),
+    nombres VARCHAR(20),
+    ci VARCHAR(20),
+    exp VARCHAR(10),
+    año_egreso VARCHAR(10),
+    inst_mil_egreso VARCHAR(30)
+);
+
+CREATE TABLE IF NOT EXISTS arma(
+    id_arma SERIAL PRIMARY KEY,
+    anio_dotacion VARCHAR(10),
+    num_pistola VARCHAR(20),
+    calibre VARCHAR(10),
+    marca VARCHAR(20),
+    modelo VARCHAR(20),
+    procedencia VARCHAR(20),
+    num_cargadores VARCHAR(10),
+    observacion VARCHAR(100)
+);
+
+CREATE TABLE IF NOT EXISTS bayoneta(
+    id_bayoneta SERIAL PRIMARY KEY,
+    anio_dotacion VARCHAR(10),
+    num_cuchillo VARCHAR(20),
+    marca VARCHAR(20),
+    modelo VARCHAR(20),
+    procedencia VARCHAR(20),
+    observacion VARCHAR(100)
+);
+
+CREATE TABLE IF NOT EXISTS espada(
+    id_espada SERIAL PRIMARY KEY,
+    anio_dotacion VARCHAR(10),
+    descripcion VARCHAR(20),
+    marca VARCHAR(20),
+    procedencia VARCHAR(20),
+    observacion VARCHAR(100)
+);
+
+CREATE TABLE IF NOT EXISTS instructor(
+    id_instructor SERIAL PRIMARY KEY,
+    id_persona INTEGER,
+    id_arma INTEGER,
+    id_bayoneta INTEGER,
+    id_espada INTEGER,
+    FOREIGN KEY (id_persona) REFERENCES persona(id_persona),
+    FOREIGN KEY (id_arma) REFERENCES arma(id_arma),
+    FOREIGN KEY (id_bayoneta) REFERENCES bayoneta(id_bayoneta),
+    FOREIGN KEY (id_espada) REFERENCES espada(id_espada)
+);
+
+CREATE TABLE IF NOT EXISTS registro_salida(
+    id_registro_salida SERIAL PRIMARY KEY,
+    id_instructor INTEGER,
+    motivo VARCHAR(20),
+    observaciones VARCHAR(20), 
+    fecha_salida TIMESTAMP,
+    FOREIGN KEY (id_instructor) REFERENCES instructor(id_instructor)
+);
+
+CREATE TABLE IF NOT EXISTS registro_entrada(
+    id_registro_entrada SERIAL PRIMARY KEY,
+    id_instructor INTEGER,
+    motivo VARCHAR(20),
+    observaciones VARCHAR(20),
+    fecha_entrada TIMESTAMP,
+    FOREIGN KEY (id_instructor) REFERENCES instructor(id_instructor)
+);
+
+///////////////para borrar todo///////////////////
+DO $$ 
+DECLARE 
+   _tbl text; 
+BEGIN 
+   FOR _tbl IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP 
+      EXECUTE 'DROP TABLE IF EXISTS public.' || _tbl || ' CASCADE'; 
+   END LOOP; 
+END $$;
+/////////////////////////////////////////////////
+
+INSERT INTO usuario (nombre_encargado, nombre_usuario, contraseña)
+VALUES ('Sgto. Perico', 'admin', 'admin');
+
+INSERT INTO arma
+(anio_dotacion, num_pistola, calibre, marca, modelo, procedencia, num_cargadores, observacion)
+VALUES('2013', '554', '9', 'taurus', 'glock', 'china', '2', 'ninguna');
+
+INSERT INTO bayoneta
+(anio_dotacion, num_cuchillo, marca, modelo, procedencia, observacion)
+VALUES('2015', '16515', '-', '-', 'Bolivia', 'ninguna');
+
+INSERT INTO espada
+(anio_dotacion, descripcion, marca, procedencia, observacion)
+VALUES('2014', 'espada ejercito', '-', '-', 'ninguna');
+
+INSERT INTO persona
+(grado, ap_paterno, ap_materno, nombres, ci, "exp", año_egreso, inst_mil_egreso)
+VALUES('Tcnl', 'Romero', 'Aracena', 'Alejandro', '66844763', 'PT', '2023', 'EMI');
+
+INSERT INTO instructor
+(id_persona, id_arma, id_bayoneta, id_espada)
+VALUES(1, 1, 1, 1);
+
+
+///////////////////////////////////////////////////////////////
+SELECT 
+    instructor.id_instructor,
+    persona.nombres AS nombres_persona,
+    arma.anio_dotacion AS anio_dotacion,
+    espada.anio_dotacion AS anio_dotacion,
+    bayoneta.anio_dotacion AS anio_dotacion
+FROM 
+    instructor
+JOIN 
+    persona ON instructor.id_persona = persona.id_persona
+JOIN 
+    arma ON instructor.id_arma = arma.id_arma
+JOIN 
+    espada ON instructor.id_espada = espada.id_espada
+JOIN 
+    bayoneta ON instructor.id_bayoneta = bayoneta.id_bayoneta;
+
+
+/////////consulta para insertar en el registro de salida///////
+DO $$
+DECLARE 
+    temp_id_persona INTEGER;
+    temp_id_instructor INTEGER;
+BEGIN
+    -- Primero, obtenemos el id_persona a través del número de carnet
+    SELECT id_persona INTO temp_id_persona FROM persona WHERE ci = '66844763';
+
+    -- Luego, obtenemos el id_instructor correspondiente a esa persona
+    SELECT id_instructor INTO temp_id_instructor FROM instructor WHERE id_persona = temp_id_persona;
+
+    -- Finalmente, insertamos en la tabla registro_salida
+    INSERT INTO registro_salida (id_instructor, motivo, fecha_salida) 
+    VALUES (temp_id_instructor, 'Motivo de prueba', NOW());
+END $$;
